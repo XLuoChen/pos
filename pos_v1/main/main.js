@@ -1,15 +1,15 @@
 'use strict';
 
 let buildCartItems = (tags, allItems) => {
-  let cartItems = [];
+  const cartItems = [];
 
   for (let tag of tags) {
     let tagArray = tag.split('-');
     let barcode = tagArray[0];
-
     let count = parseFloat(tagArray[1] || 1);
 
-    var cartItem = cartItems.find(cartItem => cartItem.item.barcode === barcode);
+    let cartItem = cartItems.find(cartItem => cartItem.item.barcode === barcode);
+
     if (cartItem) {
       cartItem.count++;
     }
@@ -21,4 +21,3 @@ let buildCartItems = (tags, allItems) => {
 
   return cartItems;
 };
-
