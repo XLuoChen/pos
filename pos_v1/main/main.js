@@ -10,7 +10,7 @@ let printReceipt = (tags) => {
 
   let receipt = buildReceipt(receiptItems);
 
-  console.log( buildReceiptText(receipt));
+  console.log(buildReceiptText(receipt));
 };
 
 let buildCartItems = (tags, allItems) => {
