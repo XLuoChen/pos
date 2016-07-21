@@ -1,108 +1,101 @@
 'use strict';
 
-let printReceipt = (tags) => {
+function printReceipt(tags) {
 
-  let allItems = loadAllItems();
-  let cartItems = buildCartItems(tags, allItems);
+  const allItems = loadAllItems();
+  const cartItems = buildCartItems(tags, allItems);
 
-  let promotions = loadPromotions();
-  let receiptItems = buildReceiptItems(cartItems, promotions);
+  const allPromotions = loadPromotions();
+  const receiptItems = buildReceiptItems(cartItems, allPromotions);
 
-  let receipt = buildReceipt(receiptItems);
+  const receipt = buildReceipt(receiptItems);
 
-  console.log(buildReceiptText(receipt));
-};
+  const receiptText = buildReceiptText(receipt);
 
-let buildCartItems = (tags, allItems) => {
+  console.log(receiptText);
+}
+
+function buildCartItems(tags, allItems) {
   const cartItems = [];
 
-  for (let tag of tags) {
-    let tagArray = tag.split('-');
-    let barcode = tagArray[0];
-    let count = parseFloat(tagArray[1] || 1);
+  for (const tag of tags) {
+    const tagArray = tag.split('-');
+    const barcode = tagArray[0];
+    const count = parseFloat(tagArray[1] || 1);
 
-    let cartItem = cartItems.find(cartItem => cartItem.item.barcode === barcode);
-
+    const cartItem = cartItems.find(cartItem => cartItem.item.barcode === barcode);
     if (cartItem) {
-      cartItem.count++;
+      cartItem.count += count;
     }
+
     else {
-      let item = allItems.find(item => item.barcode === barcode);
-      cartItems.push({item: item, count: count});
+      const item = allItems.find(item => item.barcode === barcode);
+      cartItems.push({item, count});
     }
   }
 
   return cartItems;
-};
 
-let buildReceiptItems = (cartItems, promotions) => {
+}
 
-  return cartItems.map((cartItem) => {
+function buildReceiptItems(cartItems, allPromotions) {
+  return cartItems.map(cartItem => {
+    const promotionType = getPromotionType(cartItem.item.barcode, allPromotions);
+    const {subtotal, saved} = discount(cartItem.count, cartItem.item.price, promotionType);
 
-    let promotionType = getPromotionType(cartItem.item.barcode, promotions);
-    let {subtotal, saved} = discount(cartItem, promotionType);
+    return {cartItem, subtotal, saved};
+  })
+}
 
-    return {cartItem, subtotal: subtotal, saved};
-  });
-};
+function getPromotionType(barcode, allPromotionType) {
+  const promotion = allPromotionType.find(promotion => promotion.barcodes.some(b => b === barcode));
 
-let getPromotionType = (barcode, promotions) => {
+  return promotion ? promotion.type : undefined;
+}
 
-  let promotion = promotions.find(promotion => promotion.barcodes.includes(barcode));
-
-  return promotion ? promotion.type : '';
-};
-
-let discount = (cartItem, promotionType) => {
-
-  let freeCounted = 0;
+function discount(count, price, promotionType) {
+  let subtotal = count * price;
+  let saved = 0;
 
   if (promotionType === 'BUY_TWO_GET_ONE_FREE') {
-    freeCounted = parseInt(cartItem.count / 3);
+    saved = parseInt(count / 3) * price;
   }
 
-  let saved = cartItem.item.price * freeCounted;
-  let subtotal = cartItem.item.price * cartItem.count - saved;
+  subtotal -= saved;
 
   return {subtotal, saved};
-};
+}
 
-let buildReceipt = (receiptItems) => {
-
+function buildReceipt(receiptItems) {
   let total = 0;
   let savedTotal = 0;
 
-  for (let receiptItem of receiptItems) {
+  for (const receiptItem  of receiptItems) {
     total += receiptItem.subtotal;
     savedTotal += receiptItem.saved;
   }
 
   return {receiptItems, total, savedTotal};
-};
+}
 
-let buildReceiptText = (receipt) => {
+function buildReceiptText(receipt) {
+  let receiptText = receipt.receiptItems.map(receiptItem => {
+    const cartItem = receiptItem.cartItem;
+
+    return `名称：${cartItem.item.name}，\
+数量：${cartItem.count}${cartItem.item.unit}，\
+单价：${formatMoney(cartItem.item.price)}(元)，\
+小计：${formatMoney(receiptItem.subtotal)}(元)`
+  }).join('\n');
 
   return `***<没钱赚商店>收据***
-${generateItemsText(receipt.receiptItems)}
+${receiptText}
 ----------------------
-总计：${priceToFixed(receipt.total)}(元)
-节省：${priceToFixed(receipt.savedTotal)}(元)
-**********************`
-};
+总计：${formatMoney(receipt.total)}(元)
+节省：${formatMoney(receipt.savedTotal)}(元)
+**********************`;
+}
 
-let generateItemsText = (receiptItems) => {
-
-  let itemsText = receiptItems.map(receiptItem => {
-
-    let item = receiptItem.cartItem.item;
-    return `名称：${item.name}，\
-数量：${fixedMoney.cartItem.count}${item.unit}，\
-单价：${fixedMoney(item.price)}(元)，\
-小计：${fixedMoney(receiptItem.subtotal)}(元)`;}).join('\n');
-
-  return itemsText;
-};
-
-let fixedMoney = (money) => {
+function formatMoney(money) {
   return money.toFixed(2);
-};
+}
